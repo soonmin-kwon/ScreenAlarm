@@ -43,9 +43,9 @@ internal sealed class ResourceSettingsForm : Form
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         AddResourceRow(layout, 0, "평소 GIF", mainGifBox,
-            "GIF 이미지 (*.gif)|*.gif", allowClear: false);
+            "GIF 이미지 (*.gif)|*.gif", allowClear: true);
         AddResourceRow(layout, 1, "말풍선 PNG", speechBubbleBox,
-            "PNG 이미지 (*.png)|*.png", allowClear: false);
+            "PNG 이미지 (*.png)|*.png", allowClear: true);
         AddResourceRow(layout, 2, "평소 사운드", normalSoundBox,
             "오디오 파일 (*.wav;*.mp3;*.wma)|*.wav;*.mp3;*.wma|모든 파일 (*.*)|*.*", allowClear: true);
         AddResourceRow(layout, 3, "알람 GIF", alarmGifBox,
@@ -55,7 +55,7 @@ internal sealed class ResourceSettingsForm : Form
 
         var hint = new Label
         {
-            Text = "알람 GIF와 사운드를 모두 비우면 알람 시 평소 GIF가 3배속으로 재생됩니다.",
+            Text = "평소 GIF를 비우면 내장 시계가 표시됩니다. 말풍선도 비워 둘 수 있습니다.",
             AutoSize = true,
             ForeColor = Color.DimGray,
             Margin = new Padding(3, 10, 3, 10)

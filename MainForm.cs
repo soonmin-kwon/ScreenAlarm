@@ -139,15 +139,6 @@ internal sealed class MainForm : Form
     private bool ShowAlarm(bool playSound, bool warnIfMissing = true, string? overrideGifPath = null)
     {
         var gifPath = File.Exists(overrideGifPath) ? overrideGifPath : ResolveGifPath();
-        if (gifPath is null)
-        {
-            if (warnIfMissing)
-                MessageBox.Show(
-                    "default.gif를 실행 파일 옆에 넣어 주세요.\n" +
-                    "또는 알림 영역의 Screen Alarm 아이콘을 우클릭해 GIF를 선택할 수 있습니다.",
-                    "GIF 없음", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return false;
-        }
 
         if (overlay is { IsDisposed: false })
         {
@@ -207,12 +198,12 @@ internal sealed class MainForm : Form
         if (File.Exists(settings.SpeechBubblePath))
             return settings.SpeechBubblePath;
 
-        return Path.Combine(AppContext.BaseDirectory, "말풍선_투명배경.png");
+        return string.Empty;
     }
 
     private void OpenResourceSettings()
     {
-        var currentMainGif = ResolveGifPath() ?? settings.GifPath;
+        var currentMainGif = ResolveGifPath();
         var currentBubble = ResolveSpeechBubblePath();
         using var dialog = new ResourceSettingsForm(currentMainGif, currentBubble,
             settings.NormalSoundPath, settings.AlarmGifPath, settings.AlarmSoundPath);
@@ -220,9 +211,10 @@ internal sealed class MainForm : Form
         if (dialog.ShowDialog() != DialogResult.OK)
             return;
 
-        if (!File.Exists(dialog.MainGifPath) || !File.Exists(dialog.SpeechBubblePath))
+        if ((!string.IsNullOrWhiteSpace(dialog.MainGifPath) && !File.Exists(dialog.MainGifPath)) ||
+            (!string.IsNullOrWhiteSpace(dialog.SpeechBubblePath) && !File.Exists(dialog.SpeechBubblePath)))
         {
-            MessageBox.Show("평소 GIF와 말풍선 PNG는 존재하는 파일을 선택해 주세요.",
+            MessageBox.Show("입력한 평소 GIF와 말풍선 PNG 경로를 확인해 주세요.",
                 "리소스 확인", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -314,13 +306,12 @@ internal sealed class MainForm : Form
         UpdateCountdown();
     }
 
-    private string? ResolveGifPath()
+    private string ResolveGifPath()
     {
         if (File.Exists(settings.GifPath))
             return settings.GifPath;
 
-        var defaultPath = Path.Combine(AppContext.BaseDirectory, "default.gif");
-        return File.Exists(defaultPath) ? defaultPath : null;
+        return string.Empty;
     }
 
     private void ChangeGif()

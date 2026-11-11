@@ -24,7 +24,7 @@ internal sealed class GifPlayerControl : Control
                  ControlStyles.OptimizedDoubleBuffer |
                  ControlStyles.ResizeRedraw, true);
 
-        image = Image.FromFile(gifPath);
+        image = LoadGifOrFallback(gifPath);
         if (!string.IsNullOrWhiteSpace(speechBubblePath) && File.Exists(speechBubblePath))
         {
             using var sourceBubble = new Bitmap(speechBubblePath);
@@ -78,13 +78,13 @@ internal sealed class GifPlayerControl : Control
 
     public bool ChangeGif(string gifPath)
     {
-        if (!File.Exists(gifPath))
+        if (!string.IsNullOrWhiteSpace(gifPath) && !File.Exists(gifPath))
             return false;
 
         Image? nextImage = null;
         try
         {
-            nextImage = Image.FromFile(gifPath);
+            nextImage = LoadGifOrFallback(gifPath);
             var nextDimension = new FrameDimension(nextImage.FrameDimensionsList[0]);
             var nextDelays = ReadFrameDelays(nextImage, nextImage.GetFrameCount(nextDimension));
 
@@ -259,6 +259,44 @@ internal sealed class GifPlayerControl : Control
         }
 
         return delays;
+    }
+
+    private static Image LoadGifOrFallback(string gifPath)
+    {
+        return !string.IsNullOrWhiteSpace(gifPath) && File.Exists(gifPath)
+            ? Image.FromFile(gifPath)
+            : CreateFallbackClock();
+    }
+
+    private static Bitmap CreateFallbackClock()
+    {
+        var bitmap = new Bitmap(256, 256, PixelFormat.Format32bppArgb);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.Clear(Color.Transparent);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using var faceBrush = new SolidBrush(Color.FromArgb(255, 255, 247, 220));
+        using var rimPen = new Pen(Color.FromArgb(255, 55, 48, 58), 12f);
+        using var accentPen = new Pen(Color.FromArgb(255, 244, 126, 160), 8f);
+        using var handPen = new Pen(Color.FromArgb(255, 55, 48, 58), 9f)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        };
+        using var eyeBrush = new SolidBrush(Color.FromArgb(255, 55, 48, 58));
+
+        graphics.FillEllipse(faceBrush, 24, 24, 208, 208);
+        graphics.DrawEllipse(rimPen, 24, 24, 208, 208);
+        graphics.DrawArc(accentPen, 38, 38, 180, 180, 205, 130);
+
+        graphics.FillEllipse(eyeBrush, 81, 94, 14, 18);
+        graphics.FillEllipse(eyeBrush, 161, 94, 14, 18);
+        graphics.DrawArc(rimPen, 92, 112, 72, 58, 20, 140);
+
+        graphics.DrawLine(handPen, 128, 128, 128, 66);
+        graphics.DrawLine(handPen, 128, 128, 172, 149);
+        graphics.FillEllipse(eyeBrush, 119, 119, 18, 18);
+        return bitmap;
     }
 
     private static Rectangle FitInside(Size source, Rectangle area)

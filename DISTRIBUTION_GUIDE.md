@@ -21,8 +21,6 @@ dotnet publish ScreenAlarm.csproj -c Release -r win-x64 --self-contained true -p
 완료되면 `publish\ScreenAlarm-win-x64` 폴더에 다음 파일이 있는지 확인합니다.
 
 - `ScreenAlarm.exe`
-- `default.gif`
-- `말풍선_투명배경.png`
 - `USER_GUIDE.md`
 
 폴더 전체를 `ScreenAlarm-win-x64.zip`으로 압축합니다. EXE만 따로 압축하지 마세요.
@@ -63,7 +61,7 @@ dotnet publish ScreenAlarm.csproj -c Release -r win-x64 --self-contained true -p
 ## 배포 전 확인 목록
 
 - 다른 PC에서도 EXE가 실행되는가
-- 기본 GIF와 말풍선이 표시되는가
+- 외부 GIF 없이 내장 시계와 카운트다운이 표시되는가
 - 우클릭 메뉴와 리소스 설정 창이 열리는가
 - 저장·취소 버튼이 보이는가
 - 재실행 후 위치와 크기가 유지되는가
