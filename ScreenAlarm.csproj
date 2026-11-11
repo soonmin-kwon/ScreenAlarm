@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="default.gif" Condition="Exists('default.gif')" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="말풍선_투명배경.png" Condition="Exists('말풍선_투명배경.png')" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="USER_GUIDE.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

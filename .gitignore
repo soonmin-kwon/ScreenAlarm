@@ -1,0 +1,13 @@
+.vs/
+bin/
+obj/
+publish/
+dist/
+.codex-remote-check/
+
+*.user
+*.suo
+*.zip
+
+# 초기 작업용 원본 이미지이며 런타임에서는 사용하지 않음
+1번.jpg
