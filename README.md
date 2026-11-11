@@ -7,7 +7,7 @@
 
 ## 설치
 
-1. Releases 페이지에서 `ScreenAlarm-win-x64-v1.0.0.zip`을 다운로드합니다.
+1. Releases 페이지에서 `ScreenAlarm-win-x64`로 시작하는 최신 ZIP을 다운로드합니다.
 2. ZIP 파일을 원하는 폴더에 완전히 압축 해제합니다.
 3. `ScreenAlarm.exe`를 실행합니다.
 
