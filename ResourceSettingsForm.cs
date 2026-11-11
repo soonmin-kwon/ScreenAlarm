@@ -13,8 +13,9 @@ internal sealed class ResourceSettingsForm : Form
     {
         Text = "Screen Alarm - 리소스 설정";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(760, 400);
+        ClientSize = new Size(820, 470);
         FormBorderStyle = FormBorderStyle.FixedDialog;
+        AutoScaleMode = AutoScaleMode.Dpi;
         MaximizeBox = false;
         MinimizeBox = false;
         ShowInTaskbar = false;
@@ -27,30 +28,39 @@ internal sealed class ResourceSettingsForm : Form
         alarmGifBox.Text = alarmGif;
         alarmSoundBox.Text = alarmSound;
 
-        var layout = new TableLayoutPanel
+        var outerLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2
+        };
+        outerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        outerLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        outerLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+
+        var resourcesLayout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(18),
             ColumnCount = 3,
-            RowCount = 7
+            RowCount = 6
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        resourcesLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        resourcesLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        resourcesLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         for (var row = 0; row < 5; row++)
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            resourcesLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        resourcesLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        AddResourceRow(layout, 0, "평소 GIF", mainGifBox,
+        AddResourceRow(resourcesLayout, 0, "평소 GIF", mainGifBox,
             "GIF 이미지 (*.gif)|*.gif", allowClear: true);
-        AddResourceRow(layout, 1, "말풍선 PNG", speechBubbleBox,
+        AddResourceRow(resourcesLayout, 1, "말풍선 PNG", speechBubbleBox,
             "PNG 이미지 (*.png)|*.png", allowClear: true);
-        AddResourceRow(layout, 2, "평소 사운드", normalSoundBox,
+        AddResourceRow(resourcesLayout, 2, "평소 사운드", normalSoundBox,
             "오디오 파일 (*.wav;*.mp3;*.wma)|*.wav;*.mp3;*.wma|모든 파일 (*.*)|*.*", allowClear: true);
-        AddResourceRow(layout, 3, "알람 GIF", alarmGifBox,
+        AddResourceRow(resourcesLayout, 3, "알람 GIF", alarmGifBox,
             "GIF 이미지 (*.gif)|*.gif", allowClear: true);
-        AddResourceRow(layout, 4, "알람 사운드", alarmSoundBox,
+        AddResourceRow(resourcesLayout, 4, "알람 사운드", alarmSoundBox,
             "오디오 파일 (*.wav;*.mp3;*.wma)|*.wav;*.mp3;*.wma|모든 파일 (*.*)|*.*", allowClear: true);
 
         var hint = new Label
@@ -60,25 +70,26 @@ internal sealed class ResourceSettingsForm : Form
             ForeColor = Color.DimGray,
             Margin = new Padding(3, 10, 3, 10)
         };
-        layout.Controls.Add(hint, 0, 5);
-        layout.SetColumnSpan(hint, 3);
+        resourcesLayout.Controls.Add(hint, 0, 5);
+        resourcesLayout.SetColumnSpan(hint, 3);
 
         var buttons = new FlowLayoutPanel
         {
-            AutoSize = true,
+            Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.RightToLeft,
-            Anchor = AnchorStyles.Right
+            WrapContents = false,
+            Padding = new Padding(18, 12, 18, 10)
         };
         var saveButton = new Button { Text = "저장", AutoSize = true, DialogResult = DialogResult.OK };
         var cancelButton = new Button { Text = "취소", AutoSize = true, DialogResult = DialogResult.Cancel };
         buttons.Controls.Add(saveButton);
         buttons.Controls.Add(cancelButton);
-        layout.Controls.Add(buttons, 1, 6);
-        layout.SetColumnSpan(buttons, 2);
+        outerLayout.Controls.Add(resourcesLayout, 0, 0);
+        outerLayout.Controls.Add(buttons, 0, 1);
 
         AcceptButton = saveButton;
         CancelButton = cancelButton;
-        Controls.Add(layout);
+        Controls.Add(outerLayout);
     }
 
     public string MainGifPath => mainGifBox.Text.Trim();
