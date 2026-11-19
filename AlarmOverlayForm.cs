@@ -27,6 +27,10 @@ internal sealed class AlarmOverlayForm : Form
     public AlarmOverlayForm(
         string gifPath,
         string speechBubblePath,
+        string countdownFontName,
+        string countdownFontPath,
+        float countdownFontSize,
+        FontStyle countdownFontStyle,
         Action openResourceSettings,
         Action toggleAlarm,
         Func<bool> isAlarmEnabled,
@@ -59,7 +63,8 @@ internal sealed class AlarmOverlayForm : Form
         this.saveBubbleBounds = saveBubbleBounds;
         this.saveTextBounds = saveTextBounds;
         handlesEnabled = getShowResizeHandles();
-        gifPlayer = new GifPlayerControl(gifPath, speechBubblePath)
+        gifPlayer = new GifPlayerControl(gifPath, speechBubblePath,
+            countdownFontName, countdownFontPath, countdownFontSize, countdownFontStyle)
         {
             Dock = DockStyle.Fill,
             PlaybackSpeed = getPlaybackSpeed()
@@ -257,6 +262,23 @@ internal sealed class AlarmOverlayForm : Form
         var enabledItem = new ToolStripMenuItem("카운트다운 알람 사용");
         enabledItem.Click += (_, _) => toggleAlarm();
 
+        var startupItem = new ToolStripMenuItem("Windows 시작 시 자동 실행");
+        startupItem.Click += (_, _) =>
+        {
+            var enable = !StartupRegistration.IsEnabled();
+            try
+            {
+                StartupRegistration.SetEnabled(enable);
+                startupItem.Checked = enable;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(
+                    $"자동 실행 설정을 변경하지 못했습니다.\n\n{exception.Message}",
+                    "자동 실행 설정", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        };
+
         var resetLayoutItem = new ToolStripMenuItem("배치 초기화");
         resetLayoutItem.Click += (_, _) =>
         {
@@ -303,6 +325,7 @@ internal sealed class AlarmOverlayForm : Form
             stopAlarmItem,
             new ToolStripSeparator(),
             enabledItem,
+            startupItem,
             resetLayoutItem,
             handlesItem,
             new ToolStripSeparator(),
@@ -320,6 +343,7 @@ internal sealed class AlarmOverlayForm : Form
             speedInput.Value = Math.Clamp((decimal)getPlaybackSpeed(), speedInput.Minimum, speedInput.Maximum);
             syncingSpeed = false;
             enabledItem.Checked = isAlarmEnabled();
+            startupItem.Checked = StartupRegistration.IsEnabled();
             handlesItem.Checked = handlesEnabled;
             var alarmDate = getAlarmDate();
             var summaryDate = alarmDate.HasValue

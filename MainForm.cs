@@ -8,6 +8,7 @@ internal sealed class MainForm : Form
     private readonly AlarmSettings settings = AlarmSettings.Load();
     private readonly System.Windows.Forms.Timer alarmTimer = new() { Interval = 500 };
     private readonly NotifyIcon trayIcon = new();
+    private Icon? trayAppIcon;
     private readonly AlarmAudioPlayer alarmAudio = new();
     private readonly AlarmAudioPlayer normalAudio = new();
     private DateTime nextAlarmAt;
@@ -30,6 +31,7 @@ internal sealed class MainForm : Form
 
         Shown += HandleFirstShown;
         FormClosing += HandleFormClosing;
+        FormClosed += (_, _) => trayAppIcon?.Dispose();
     }
 
     private void ConfigureTrayIcon()
@@ -47,6 +49,9 @@ internal sealed class MainForm : Form
         var enabledItem = new ToolStripMenuItem("카운트다운 알람 사용");
         enabledItem.Click += (_, _) => ToggleAlarm();
 
+        var startupItem = new ToolStripMenuItem("Windows 시작 시 자동 실행");
+        startupItem.Click += (_, _) => ToggleStartup(startupItem);
+
         var stopAlarmItem = new ToolStripMenuItem("알람 중지");
         stopAlarmItem.Click += (_, _) => StopActiveAlarm();
 
@@ -58,6 +63,7 @@ internal sealed class MainForm : Form
             resourcesItem,
             previewAlarmItem,
             enabledItem,
+            startupItem,
             stopAlarmItem,
             new ToolStripSeparator(),
             exitItem
@@ -65,11 +71,13 @@ internal sealed class MainForm : Form
         menu.Opening += (_, _) =>
         {
             enabledItem.Checked = settings.Enabled;
+            startupItem.Checked = StartupRegistration.IsEnabled();
             stopAlarmItem.Enabled = alarmActive;
         };
 
         trayIcon.Text = "Screen Alarm";
-        trayIcon.Icon = SystemIcons.Application;
+        trayAppIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        trayIcon.Icon = trayAppIcon ?? SystemIcons.Application;
         trayIcon.ContextMenuStrip = menu;
         trayIcon.Visible = true;
         trayIcon.DoubleClick += (_, _) => ShowAlarm(playSound: false);
@@ -157,6 +165,10 @@ internal sealed class MainForm : Form
         overlay = new AlarmOverlayForm(
             gifPath,
             ResolveSpeechBubblePath(),
+            settings.CountdownFontName,
+            settings.CountdownFontPath,
+            settings.CountdownFontSize,
+            settings.CountdownFontStyle,
             OpenResourceSettings,
             ToggleAlarm,
             () => settings.Enabled,
@@ -206,15 +218,19 @@ internal sealed class MainForm : Form
         var currentMainGif = ResolveGifPath();
         var currentBubble = ResolveSpeechBubblePath();
         using var dialog = new ResourceSettingsForm(currentMainGif, currentBubble,
-            settings.NormalSoundPath, settings.AlarmGifPath, settings.AlarmSoundPath);
+            settings.NormalSoundPath, settings.AlarmGifPath, settings.AlarmSoundPath,
+            settings.CountdownFontName, settings.CountdownFontPath,
+            settings.CountdownFontSize, settings.CountdownFontStyle,
+            settings.CountdownTextFormat, settings.AlarmText);
 
         if (dialog.ShowDialog() != DialogResult.OK)
             return;
 
         if ((!string.IsNullOrWhiteSpace(dialog.MainGifPath) && !File.Exists(dialog.MainGifPath)) ||
-            (!string.IsNullOrWhiteSpace(dialog.SpeechBubblePath) && !File.Exists(dialog.SpeechBubblePath)))
+            (!string.IsNullOrWhiteSpace(dialog.SpeechBubblePath) && !File.Exists(dialog.SpeechBubblePath)) ||
+            (!string.IsNullOrWhiteSpace(dialog.CountdownFontPath) && !File.Exists(dialog.CountdownFontPath)))
         {
-            MessageBox.Show("입력한 평소 GIF와 말풍선 PNG 경로를 확인해 주세요.",
+            MessageBox.Show("입력한 평소 GIF, 말풍선 PNG, 폰트 파일 경로를 확인해 주세요.",
                 "리소스 확인", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -224,6 +240,12 @@ internal sealed class MainForm : Form
         settings.NormalSoundPath = dialog.NormalSoundPath;
         settings.AlarmGifPath = dialog.AlarmGifPath;
         settings.AlarmSoundPath = dialog.AlarmSoundPath;
+        settings.CountdownFontName = dialog.CountdownFontName;
+        settings.CountdownFontPath = dialog.CountdownFontPath;
+        settings.CountdownFontSize = dialog.CountdownFontSize;
+        settings.CountdownFontStyle = dialog.CountdownFontStyle;
+        settings.CountdownTextFormat = dialog.CountdownTextFormat;
+        settings.AlarmText = dialog.AlarmText;
         settings.Save();
 
         overlay?.Close();
@@ -366,6 +388,22 @@ internal sealed class MainForm : Form
         UpdateCountdown();
     }
 
+    private void ToggleStartup(ToolStripMenuItem menuItem)
+    {
+        var enable = !StartupRegistration.IsEnabled();
+        try
+        {
+            StartupRegistration.SetEnabled(enable);
+            menuItem.Checked = enable;
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                $"자동 실행 설정을 변경하지 못했습니다.\n\n{exception.Message}",
+                "자동 실행 설정", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
     private void CancelActiveAlarmForReschedule()
     {
         if (!alarmActive)
@@ -486,7 +524,9 @@ internal sealed class MainForm : Form
 
         if (alarmActive)
         {
-            overlay.UpdateCountdown("알람 시간!");
+            overlay.UpdateCountdown(string.IsNullOrWhiteSpace(settings.AlarmText)
+                ? "알람 시간!"
+                : settings.AlarmText);
             return;
         }
 
@@ -507,9 +547,15 @@ internal sealed class MainForm : Form
         var hours = totalMinutes / 60;
         var minutes = totalMinutes % 60;
 
-        overlay.UpdateCountdown(hours > 0
-            ? $"{hours}시간 {minutes}분 남음"
-            : $"{minutes}분 남음");
+        var timeText = hours > 0 ? $"{hours}시간 {minutes}분" : $"{minutes}분";
+        var format = string.IsNullOrWhiteSpace(settings.CountdownTextFormat)
+            ? "{time} 남음"
+            : settings.CountdownTextFormat;
+        overlay.UpdateCountdown(format
+            .Replace("{time}", timeText, StringComparison.OrdinalIgnoreCase)
+            .Replace("{hours}", hours.ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("{minutes}", minutes.ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("{totalMinutes}", totalMinutes.ToString(), StringComparison.OrdinalIgnoreCase));
     }
 
     private void ExitApplication()

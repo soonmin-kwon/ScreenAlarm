@@ -1,6 +1,7 @@
 using System.Drawing.Imaging;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 
 namespace ScreenAlarm;
 
@@ -14,10 +15,18 @@ internal sealed class GifPlayerControl : Control
     private int frameIndex;
     private double playbackSpeed = 1d;
     private string countdownText = string.Empty;
+    private readonly string countdownFontName;
+    private readonly float countdownFontSize;
+    private readonly FontStyle countdownFontStyle;
+    private PrivateFontCollection? customFontCollection;
+    private FontFamily? customFontFamily;
 
     public event EventHandler? FrameChanged;
 
-    public GifPlayerControl(string gifPath, string? speechBubblePath = null)
+    public GifPlayerControl(string gifPath, string? speechBubblePath = null,
+        string? countdownFontName = null, string? countdownFontPath = null,
+        float countdownFontSize = 10F,
+        FontStyle countdownFontStyle = FontStyle.Bold)
     {
         SetStyle(ControlStyles.UserPaint |
                  ControlStyles.AllPaintingInWmPaint |
@@ -25,6 +34,12 @@ internal sealed class GifPlayerControl : Control
                  ControlStyles.ResizeRedraw, true);
 
         image = LoadGifOrFallback(gifPath);
+        this.countdownFontName = string.IsNullOrWhiteSpace(countdownFontName)
+            ? "Segoe UI"
+            : countdownFontName;
+        this.countdownFontSize = Math.Clamp(countdownFontSize, 6F, 72F);
+        this.countdownFontStyle = countdownFontStyle;
+        LoadCustomFont(countdownFontPath);
         if (!string.IsNullOrWhiteSpace(speechBubblePath) && File.Exists(speechBubblePath))
         {
             using var sourceBubble = new Bitmap(speechBubblePath);
@@ -165,8 +180,8 @@ internal sealed class GifPlayerControl : Control
                 Trimming = StringTrimming.EllipsisCharacter,
                 FormatFlags = StringFormatFlags.NoWrap
             };
-            var fontSize = Math.Clamp(textBounds.Height * 0.38f, 8f, 36f);
-            using var countdownFont = new Font("Segoe UI", fontSize, FontStyle.Bold);
+            var fontSize = Math.Clamp(textBounds.Height * 0.38f * (countdownFontSize / 10F), 6F, 72F);
+            using var countdownFont = CreateCountdownFont(fontSize);
             using var shadowBrush = new SolidBrush(Color.Black);
             using var textBrush = new SolidBrush(Color.White);
             foreach (var offset in new[] { new Point(-1, 0), new Point(1, 0), new Point(0, -1), new Point(0, 1) })
@@ -177,6 +192,63 @@ internal sealed class GifPlayerControl : Control
             }
             graphics.DrawString(countdownText, countdownFont, textBrush, textBounds, format);
         }
+    }
+
+    private Font CreateCountdownFont(float fontSize)
+    {
+        try
+        {
+            if (customFontFamily is not null)
+                return new Font(customFontFamily, fontSize,
+                    GetAvailableStyle(customFontFamily, countdownFontStyle));
+            return new Font(countdownFontName, fontSize, countdownFontStyle);
+        }
+        catch (ArgumentException)
+        {
+            return new Font("Segoe UI", fontSize, FontStyle.Bold);
+        }
+    }
+
+    private void LoadCustomFont(string? fontPath)
+    {
+        if (string.IsNullOrWhiteSpace(fontPath) || !File.Exists(fontPath))
+            return;
+
+        PrivateFontCollection? collection = null;
+        try
+        {
+            collection = new PrivateFontCollection();
+            collection.AddFontFile(fontPath);
+            if (collection.Families.Length == 0)
+            {
+                collection.Dispose();
+                return;
+            }
+
+            customFontCollection = collection;
+            customFontFamily = collection.Families[0];
+            collection = null;
+        }
+        catch
+        {
+            collection?.Dispose();
+            customFontCollection = null;
+            customFontFamily = null;
+        }
+    }
+
+    private static FontStyle GetAvailableStyle(FontFamily family, FontStyle requested)
+    {
+        if (family.IsStyleAvailable(requested))
+            return requested;
+
+        foreach (var style in new[] { FontStyle.Regular, FontStyle.Bold, FontStyle.Italic })
+        {
+            if (family.IsStyleAvailable(style))
+                return style;
+        }
+
+        return FontStyle.Regular;
     }
 
     public Rectangle GetGifBounds(Size targetSize)
@@ -213,6 +285,7 @@ internal sealed class GifPlayerControl : Control
             frameTimer.Dispose();
             speechBubble?.Dispose();
             image.Dispose();
+            customFontCollection?.Dispose();
         }
 
         base.Dispose(disposing);

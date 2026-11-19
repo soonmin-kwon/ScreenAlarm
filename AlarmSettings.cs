@@ -29,6 +29,12 @@ internal sealed class AlarmSettings
     public string AlarmSoundPath { get; set; } = string.Empty;
     public string NormalSoundPath { get; set; } = string.Empty;
     public string SpeechBubblePath { get; set; } = string.Empty;
+    public string CountdownFontName { get; set; } = "Segoe UI";
+    public string CountdownFontPath { get; set; } = string.Empty;
+    public float CountdownFontSize { get; set; } = 10F;
+    public FontStyle CountdownFontStyle { get; set; } = FontStyle.Bold;
+    public string CountdownTextFormat { get; set; } = "{time} 남음";
+    public string AlarmText { get; set; } = "알람 시간!";
     public DateTime? AlarmDate { get; set; }
     public bool OneTimeAlarmCompleted { get; set; }
 
